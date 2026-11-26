@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>കായക്കൊടി ഗ്രാമപഞ്ചായത്ത് - ട്രേഡേഴ്സ് ലിസ്റ്റ് മാനേജ്മെന്റ്</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --primary: #0f4c81;
+      --primary-dark: #093256;
+      --bg: #f1f5f9;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --green-bg: #dcfce7;
+      --green-border: #16a34a;
+      --green-text: #14532d;
+      --red-bg: #fee2e2;
+      --red-border: #dc2626;
+      --red-text: #7f1d1d;
+      --border: #cbd5e1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Noto Sans Malayalam', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 84px;
+    }
+
+    .app-header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 14px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .app-title h1 {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .app-title p {
+      font-size: 11px;
+      opacity: 0.88;
+    }
+
+    .upload-btn {
+      background: #f59e0b;
+      color: #111827;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 12px 12px 6px;
+    }
+
+    .stat-box {
+      background: white;
+      padding: 8px 6px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      border-bottom: 3px solid var(--primary);
+    }
+
+    .stat-box.green { border-bottom-color: var(--green-border); background: #f0fdf4; }
+    .stat-box.red { border-bottom-color: var(--red-border); background: #fef2f2; }
+    .stat-box.gray { border-bottom-color: #94a3b8; }
+
+    .stat-num {
+      font-size: 17px;
+      font-weight: 800;
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .controls {
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    select, input[type="text"], input[type="tel"], textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+      color: var(--text);
+    }
+
+    .status-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .tab-btn {
+      padding: 7px 4px;
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .options-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 0 2px;
+    }
+
+    .list-container {
+      padding: 6px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .trader-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      border-left: 6px solid #94a3b8;
+      cursor: pointer;
+    }
+
+    .trader-card.licensed-yes {
+      background: var(--green-bg);
+      border-left-color: var(--green-border);
+      border: 1px solid #86efac;
+      border-left-width: 6px;
+    }
+
+    .trader-card.licensed-no {
+      background: var(--red-bg);
+      border-left-color: var(--red-border);
+      border: 1px solid #fca5a5;
+      border-left-width: 6px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+
+    .badge-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .badge.ward { background: #dbeafe; color: #1e40af; }
+    .badge.door { background: #fef3c7; color: #92400e; }
+
+    .license-pill {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 20px;
+    }
+
+    .pill-yes { background: #16a34a; color: white; }
+    .pill-no { background: #dc2626; color: white; }
+    .pill-pending { background: #cbd5e1; color: #334155; }
+
+    .owner-name {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #0f172a;
+    }
+
+    .sub-info {
+      font-size: 12px;
+      color: #334155;
+      line-height: 1.5;
+    }
+
+    .trader-details-box {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(0,0,0,0.15);
+      font-size: 12.5px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 8px;
+    }
+
+    .trader-details-box div span {
+      font-weight: 700;
+    }
+
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 10px 12px;
+      display: flex;
+      gap: 8px;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      z-index: 90;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      color: white;
+    }
+
+    .btn-excel { background: #15803d; }
+    .btn-backup { background: #0284c7; }
+    .btn-restore { background: #475569; }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-sheet {
+      background: white;
+      width: 100%;
+      max-width: 520px;
+      border-radius: 18px 18px 0 0;
+      padding: 18px 16px 24px;
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .modal-header h2 {
+      font-size: 16px;
+      color: var(--primary);
+    }
+
+    .close-btn {
+      background: #e2e8f0;
+      border: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .readonly-summary {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #334155;
+    }
+
+    .other-trade-box {
+      display: none;
+      margin-top: 8px;
+      padding: 10px;
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 8px;
+    }
+
+    .other-trade-box.visible {
+      display: block;
+    }
+
+    .other-trade-box label {
+      color: #0369a1;
+      margin-bottom: 5px;
+    }
+
+    .license-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .lic-option {
+      padding: 10px 6px;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .lic-option.selected-yes {
+      background: var(--green-bg);
+      border-color: var(--green-border);
+      color: var(--green-text);
+    }
+
+    .lic-option.selected-no {
+      background: var(--red-bg);
+      border-color: var(--red-border);
+      color: var(--red-text);
+    }
+
+    .lic-option.selected-none {
+      background: #e2e8f0;
+      border-color: #64748b;
+      color: #0f172a;
+    }
+
+    .save-btn {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      margin-top: 6px;
+      cursor: pointer;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-top">
+      <div class="app-title">
+        <h1>ട്രേഡേഴ്സ് ലിസ്റ്റ് മാനേജ്മെന്റ്</h1>
+        <p>കായക്കൊടി ഗ്രാമപഞ്ചായത്ത് (Commercial Buildings)</p>
+      </div>
+      <button class="upload-btn" onclick="document.getElementById('excelInput').click()">
+        📂 Excel അപ്‌ലോഡ്
+      </button>
+      <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" style="display:none" />
+    </div>
+  </header>
+
+  <section class="stats-grid">
+    <div class="stat-box">
+      <span class="stat-num" id="statTotal">0</span>
+      <span class="stat-label">ആകെ കടകൾ</span>
+    </div>
+    <div class="stat-box green">
+      <span class="stat-num" id="statYes" style="color:#15803d">0</span>
+      <span class="stat-label">ലൈസൻസ് ഉണ്ട്</span>
+    </div>
+    <div class="stat-box red">
+      <span class="stat-num" id="statNo" style="color:#dc2626">0</span>
+      <span class="stat-label">ലൈസൻസ് ഇല്ല</span>
+    </div>
+    <div class="stat-box gray">
+      <span class="stat-num" id="statPending">0</span>
+      <span class="stat-label">രേഖപ്പെടുത്താത്തവ</span>
+    </div>
+  </section>
+
+  <section class="controls">
+    <div class="filter-row">
+      <select id="wardFilter" style="flex: 0.45;">
+        <option value="ALL">എല്ലാ വാർഡുകളും</option>
+      </select>
+      <input type="text" id="searchInput" placeholder="കെട്ടിട നമ്പർ, ഉടമ, വ്യാപാരി തിരയുക..." style="flex: 0.55;" />
+    </div>
+
+    <div class="status-tabs">
+      <button class="tab-btn active" data-filter="ALL" onclick="setStatusFilter('ALL', this)">എല്ലാം</button>
+      <button class="tab-btn" data-filter="YES" onclick="setStatusFilter('YES', this)">ലൈസൻസ് ഉണ്ട്</button>
+      <button class="tab-btn" data-filter="NO" onclick="setStatusFilter('NO', this)">ലൈസൻസ് ഇല്ല</button>
+      <button class="tab-btn" data-filter="PENDING" onclick="setStatusFilter('PENDING', this)">പെൻഡിംഗ്</button>
+    </div>
+
+    <div class="options-bar">
+      <label style="display:flex; align-items:center; gap:5px;">
+        <input type="checkbox" id="activeOnlyCheck" checked onchange="renderList()" />
+        സജീവ കെട്ടിടങ്ങൾ മാത്രം (ACTIVE Only)
+      </label>
+      <span id="showingCount">0 എണ്ണം</span>
+    </div>
+  </section>
+
+  <main class="list-container" id="listContainer">
+    <div class="empty-state">
+      <h3>ഡാറ്റ ലഭ്യമല്ല</h3>
+      <p style="margin-top:8px; font-size:13px;">മുകളിലുള്ള <b>"📂 Excel അപ്‌ലോഡ്"</b> ബട്ടൺ അമർത്തി <b>download (51).xlsx</b> ഫയൽ തിരഞ്ഞെടുക്കുക.</p>
+    </div>
+  </main>
+
+  <div class="bottom-bar">
+    <button class="action-btn btn-excel" onclick="exportToExcel()">📥 Excel റിപ്പോർട്ട്</button>
+    <button class="action-btn btn-backup" onclick="downloadBackup()">💾 ബാക്കപ്പ്</button>
+    <button class="action-btn btn-restore" onclick="document.getElementById('jsonInput').click()">🔄 റീസ്റ്റോർ</button>
+    <input type="file" id="jsonInput" accept=".json" style="display:none" />
+  </div>
+
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h2>വ്യാപാര വിവരങ്ങൾ രേഖപ്പെടുത്തുക</h2>
+        <button class="close-btn" onclick="closeModal()">✕</button>
+      </div>
+
+      <div class="readonly-summary" id="modalBuildingInfo"></div>
+      <input type="hidden" id="editBuildingId" />
+
+      <div class="form-group">
+        <label>വ്യാപാരം നടത്തുന്ന ആളുടെ പേര് (Trader Name)</label>
+        <input type="text" id="traderName" placeholder="വ്യാപാരിയുടെ പേര് നൽകുക" />
+      </div>
+
+      <div class="form-group">
+        <label>വ്യാപാര സ്ഥാപനത്തിന്റെ പേര് / അഡ്രസ്സ് (Shop Name & Address)</label>
+        <textarea id="traderAddress" rows="2" placeholder="സ്ഥാപനത്തിന്റെ പേരും വിലാസവും"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>ഫോൺ നമ്പർ (Phone Number)</label>
+        <input type="tel" id="traderPhone" placeholder="ഉദാ: 9847000000" />
+      </div>
+
+      <div class="form-group">
+        <label>വ്യാപാരത്തിന്റെ സ്വഭാവം (Nature of Trade)</label>
+        <select id="tradeNatureSelect" onchange="toggleOtherTradeField()">
+          <option value="">-- തിരഞ്ഞെടുക്കുക --</option>
+          <option value="പലചരക്ക് കട">പലചരക്ക് കട</option>
+          <option value="ഹോട്ടൽ / ഭക്ഷണശാല">ഹോട്ടൽ / ഭക്ഷണശാല</option>
+          <option value="ബേക്കറി / കൂൾബാർ">ബേക്കറി / കൂൾബാർ</option>
+          <option value="മെഡിക്കൽ ഷോപ്പ് / ക്ലിനിക്">മെഡിക്കൽ ഷോപ്പ് / ക്ലിനിക്</option>
+          <option value="ടെക്സ്റ്റൈൽസ് / വസ്ത്രവ്യാപാരം">ടെക്സ്റ്റൈൽസ് / വസ്ത്രവ്യാപാരം</option>
+          <option value="വർക്ക്ഷോപ്പ് / ഓട്ടോമൊബൈൽ">വർക്ക്ഷോപ്പ് / ഓട്ടോമൊബൈൽ</option>
+          <option value="സ്റ്റേഷനറി / ഫാൻസി">സ്റ്റേഷനറി / ഫാൻസി</option>
+          <option value="ഇലക്ട്രിക്കൽ / ഹാർഡ്‌വെയർ">ഇലക്ട്രിക്കൽ / ഹാർഡ്‌വെയർ</option>
+          <option value="പച്ചക്കറി / പഴം / മത്സ്യം / മാംസം">പച്ചക്കറി / പഴം / മത്സ്യം / മാംസം</option>
+          <option value="ഓഫീസ് / ഏജൻസി / ഗോഡൗൺ">ഓഫീസ് / ഏജൻസി / ഗോഡൗൺ</option>
+          <option value="മറ്റുള്ളവ">മറ്റുള്ളവ</option>
+        </select>
+
+        <div class="other-trade-box" id="otherTradeBox">
+          <label for="otherTradeSpecify">മറ്റുള്ളവ — ഏത് തരം വ്യാപാരം? (Specify Trade Type)</label>
+          <input type="text" id="otherTradeSpecify" placeholder="ഏത് തരം വ്യാപാരമാണെന്ന് ഇവിടെ രേഖപ്പെടുത്തുക..." />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>D&O ലൈസൻസ് ഉണ്ടോ? (License Status)</label>
+        <div class="license-toggle">
+          <div class="lic-option" id="optYes" onclick="selectLicense('YES')">✅ ഉണ്ട് (Yes)</div>
+          <div class="lic-option" id="optNo" onclick="selectLicense('NO')">❌ ഇല്ല (No)</div>
+          <div class="lic-option" id="optNone" onclick="selectLicense('')">⏳ രേഖപ്പെടുത്തിയില്ല</div>
+        </div>
+        <input type="hidden" id="licenseStatus" value="" />
+      </div>
+
+      <button class="save-btn" onclick="saveTraderDetails()">സേവ് ചെയ്യുക (Save)</button>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'kayakkody_traders_data_v1';
+    let buildingsData = [];
+    let currentStatusFilter = 'ALL';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          buildingsData = JSON.parse(saved);
+          populateWardDropdown();
+          renderList();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    });
+
+    function extractOwnerName(ownerAddr) {
+      if (!ownerAddr) return 'ലഭ്യമല്ല';
+      const str = String(ownerAddr).trim();
+      const firstPart = str.split(',')[0].split('(')[0].trim();
+      return firstPart || str;
+    }
+
+    function formatDoorNo(door, sub) {
+      const d = door !== undefined && door !== null ? String(door).trim() : '';
+      const s = sub !== undefined && sub !== null && String(sub).trim() !== '' ? '/' + String(sub).trim() : '';
+      return d + s;
+    }
+
+    function getFormattedTradeDisplay(item) {
+      if (item.tradeCategory === 'മറ്റുള്ളവ') {
+        return item.tradeOtherDetail ? `മറ്റുള്ളവ (${item.tradeOtherDetail})` : 'മറ്റുള്ളവ';
+      }
+      return item.tradeCategory || item.tradeNature || '-';
+    }
+
+    document.getElementById('excelInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        let headerRowIndex = -1;
+        for (let i = 0; i < Math.min(10, rawRows.length); i++) {
+          if (rawRows[i] && rawRows[i].includes('Building Usage') && rawRows[i].includes('Ward No')) {
+            headerRowIndex = i;
+            break;
+          }
+        }
+
+        if (headerRowIndex === -1) {
+          alert('ശരിയായ Assessment Report Excel ഫയൽ അല്ല! ദയവായി പരിശോധിക്കുക.');
+          return;
+        }
+
+        const headers = rawRows[headerRowIndex];
+        const colIdx = {
+          id: headers.indexOf('Building ID'),
+          wardNo: headers.indexOf('Ward No'),
+          wardName: headers.indexOf('Ward Name'),
+          doorNo: headers.indexOf('Door No'),
+          subNo: headers.indexOf('Sub No'),
+          bldgAddr: headers.indexOf('Building Address'),
+          ownerAddr: headers.indexOf('Owner Address'),
+          usage: headers.indexOf('Building Usage'),
+          subUsage: headers.indexOf('Building SubUsage'),
+          status: headers.indexOf('Building Status')
+        };
+
+        const existingMap = {};
+        buildingsData.forEach(item => {
+          existingMap[item.id] = item;
+        });
+
+        const filtered = [];
+        for (let r = headerRowIndex + 1; r < rawRows.length; r++) {
+          const row = rawRows[r];
+          if (!row || row.length === 0) continue;
+
+          const usageVal = String(row[colIdx.usage] || '').trim();
+          if (!usageVal.toLowerCase().includes('commercial')) continue;
+
+          const bId = String(row[colIdx.id] || r);
+          const prev = existingMap[bId] || {};
+
+          filtered.push({
+            id: bId,
+            wardNo: String(row[colIdx.wardNo] || '').trim(),
+            wardName: String(row[colIdx.wardName] || '').trim(),
+            doorNo: formatDoorNo(row[colIdx.doorNo], row[colIdx.subNo]),
+            ownerName: extractOwnerName(row[colIdx.ownerAddr]),
+            fullOwnerAddress: String(row[colIdx.ownerAddr] || '').replace(/\n/g, ' ').trim(),
+            buildingAddress: String(row[colIdx.bldgAddr] || '').trim(),
+            subUsage: String(row[colIdx.subUsage] || '').trim(),
+            buildingStatus: String(row[colIdx.status] || 'ACTIVE').trim(),
+            traderName: prev.traderName || '',
+            traderAddress: prev.traderAddress || '',
+            traderPhone: prev.traderPhone || '',
+            tradeCategory: prev.tradeCategory || '',
+            tradeOtherDetail: prev.tradeOtherDetail || '',
+            licenseStatus: prev.licenseStatus || ''
+          });
+        }
+
+        filtered.sort((a, b) => {
+          const wDiff = (parseInt(a.wardNo) || 0) - (parseInt(b.wardNo) || 0);
+          if (wDiff !== 0) return wDiff;
+          return (parseInt(a.doorNo) || 0) - (parseInt(b.doorNo) || 0);
+        });
+
+        buildingsData = filtered;
+        saveToLocal();
+        populateWardDropdown();
+        renderList();
+        alert(`വിജയകരമായി അപ്‌ലോഡ് ചെയ്തു! ആകെ ${filtered.length} കൊമേഴ്സ്യൽ കെട്ടിടങ്ങൾ ലഭ്യമായിട്ടുണ്ട്.`);
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    function saveToLocal() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(buildingsData));
+    }
+
+    function populateWardDropdown() {
+      const wardSelect = document.getElementById('wardFilter');
+      const currentVal = wardSelect.value;
+      const wards = new Map();
+
+      buildingsData.forEach(b => {
+        if (b.wardNo && !wards.has(b.wardNo)) {
+          wards.set(b.wardNo, b.wardName);
+        }
+      });
+
+      const sortedWards = Array.from(wards.entries()).sort((a, b) => (parseInt(a[0]) || 0) - (parseInt(b[0]) || 0));
+
+      wardSelect.innerHTML = '<option value="ALL">എല്ലാ വാർഡുകളും (All Wards)</option>';
+      sortedWards.forEach(([wNo, wName]) => {
+        const opt = document.createElement('option');
+        opt.value = wNo;
+        opt.textContent = `വാർഡ് ${wNo} - ${wName}`;
+        wardSelect.appendChild(opt);
+      });
+
+      if ([...wardSelect.options].some(o => o.value === currentVal)) {
+        wardSelect.value = currentVal;
+      }
+    }
+
+    document.getElementById('wardFilter').addEventListener('change', renderList);
+    document.getElementById('searchInput').addEventListener('input', renderList);
+
+    function setStatusFilter(status, btn) {
+      currentStatusFilter = status;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderList();
+    }
+
+    function renderList() {
+      const container = document.getElementById('listContainer');
+      const wardVal = document.getElementById('wardFilter').value;
+      const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+      const activeOnly = document.getElementById('activeOnlyCheck').checked;
+
+      const wardScoped = buildingsData.filter(b => {
+        if (activeOnly && b.buildingStatus !== 'ACTIVE') return false;
+        if (wardVal !== 'ALL' && b.wardNo !== wardVal) return false;
+        return true;
+      });
+
+      const yesCount = wardScoped.filter(b => b.licenseStatus === 'YES').length;
+      const noCount = wardScoped.filter(b => b.licenseStatus === 'NO').length;
+      const pendingCount = wardScoped.filter(b => !b.licenseStatus).length;
+
+      document.getElementById('statTotal').textContent = wardScoped.length;
+      document.getElementById('statYes').textContent = yesCount;
+      document.getElementById('statNo').textContent = noCount;
+      document.getElementById('statPending').textContent = pendingCount;
+
+      const finalItems = wardScoped.filter(b => {
+        if (currentStatusFilter === 'YES' && b.licenseStatus !== 'YES') return false;
+        if (currentStatusFilter === 'NO' && b.licenseStatus !== 'NO') return false;
+        if (currentStatusFilter === 'PENDING' && b.licenseStatus) return false;
+
+        if (searchVal) {
+          const tradeText = getFormattedTradeDisplay(b);
+          const hay = `${b.doorNo} ${b.ownerName} ${b.traderName} ${b.traderPhone} ${tradeText} ${b.buildingAddress}`.toLowerCase();
+          if (!hay.includes(searchVal)) return false;
+        }
+        return true;
+      });
+
+      document.getElementById('showingCount').textContent = `${finalItems.length} എണ്ണം കാണിക്കുന്നു`;
+
+      if (finalItems.length === 0) {
+        container.innerHTML = `<div class="empty-state"><p>തിരഞ്ഞെടുത്ത വിഭാഗത്തിൽ കെട്ടിടങ്ങൾ ഒന്നും ലഭ്യമല്ല.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      finalItems.forEach((item, index) => {
+        const card = document.createElement('div');
+        let cardClass = 'trader-card';
+        let pillHtml = '<span class="license-pill pill-pending">രേഖപ്പെടുത്തിയില്ല</span>';
+
+        if (item.licenseStatus === 'YES') {
+          cardClass += ' licensed-yes';
+          pillHtml = '<span class="license-pill pill-yes">ലൈസൻസ് ഉണ്ട്</span>';
+        } else if (item.licenseStatus === 'NO') {
+          cardClass += ' licensed-no';
+          pillHtml = '<span class="license-pill pill-no">ലൈസൻസ് ഇല്ല</span>';
+        }
+
+        card.className = cardClass;
+        card.onclick = () => openEditModal(item.id);
+
+        const tradeDisplay = getFormattedTradeDisplay(item);
+        const hasTraderInfo = item.traderName || item.traderPhone || item.tradeCategory || item.traderAddress;
+
+        card.innerHTML = `
+          <div class="card-header">
+            <div class="badge-group">
+              <span class="badge">#${index + 1}</span>
+              <span class="badge ward">വാർഡ് ${item.wardNo}</span>
+              <span class="badge door">കെട്ടിടം: ${item.doorNo}</span>
+            </div>
+            ${pillHtml}
+          </div>
+          <div class="owner-name">ഉടമ: ${item.ownerName}</div>
+          <div class="sub-info">
+            സ്ഥലം: ${item.buildingAddress || item.wardName} (${item.subUsage || 'Commercial'})
+          </div>
+          ${hasTraderInfo ? `
+            <div class="trader-details-box">
+              <div>വ്യാപാരി: <span>${item.traderName || '-'}</span></div>
+              <div>ഫോൺ: <span>${item.traderPhone || '-'}</span></div>
+              <div>വ്യാപാരം: <span>${tradeDisplay}</span></div>
+              <div>അഡ്രസ്സ്: <span>${item.traderAddress || '-'}</span></div>
+            </div>
+          ` : `<div style="margin-top:6px; font-size:11.5px; color:#475569;">👉 വ്യാപാര വിവരങ്ങൾ ചേർക്കാൻ ഇവിടെ ക്ലിക്ക് ചെയ്യുക</div>`}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function toggleOtherTradeField() {
+      const selVal = document.getElementById('tradeNatureSelect').value;
+      const box = document.getElementById('otherTradeBox');
+      if (selVal === 'മറ്റുള്ളവ') {
+        box.classList.add('visible');
+      } else {
+        box.classList.remove('visible');
+      }
+    }
+
+    function openEditModal(id) {
+      const item = buildingsData.find(b => b.id === id);
+      if (!item) return;
+
+      document.getElementById('editBuildingId').value = item.id;
+      document.getElementById('modalBuildingInfo').innerHTML = `
+        <b>വാർഡ്:</b> ${item.wardNo} (${item.wardName}) &nbsp;|&nbsp; <b>കെട്ടിട നമ്പർ:</b> ${item.doorNo}<br>
+        <b>ഉടമയുടെ പേര്:</b> ${item.ownerName}<br>
+        <b>വിലാസം:</b> ${item.buildingAddress || item.fullOwnerAddress}
+      `;
+
+      document.getElementById('traderName').value = item.traderName || '';
+      document.getElementById('traderAddress').value = item.traderAddress || '';
+      document.getElementById('traderPhone').value = item.traderPhone || '';
+
+      document.getElementById('tradeNatureSelect').value = item.tradeCategory || '';
+      document.getElementById('otherTradeSpecify').value = item.tradeOtherDetail || '';
+      toggleOtherTradeField();
+
+      selectLicense(item.licenseStatus || '');
+      document.getElementById('editModal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('editModal').classList.remove('open');
+    }
+
+    function selectLicense(val) {
+      document.getElementById('licenseStatus').value = val;
+      document.getElementById('optYes').className = 'lic-option' + (val === 'YES' ? ' selected-yes' : '');
+      document.getElementById('optNo').className = 'lic-option' + (val === 'NO' ? ' selected-no' : '');
+      document.getElementById('optNone').className = 'lic-option' + (val === '' ? ' selected-none' : '');
+    }
+
+    function saveTraderDetails() {
+      const id = document.getElementById('editBuildingId').value;
+      const idx = buildingsData.findIndex(b => b.id === id);
+      if (idx === -1) return;
+
+      const selectedCat = document.getElementById('tradeNatureSelect').value;
+      const otherDetail = document.getElementById('otherTradeSpecify').value.trim();
+
+      buildingsData[idx].traderName = document.getElementById('traderName').value.trim();
+      buildingsData[idx].traderAddress = document.getElementById('traderAddress').value.trim();
+      buildingsData[idx].traderPhone = document.getElementById('traderPhone').value.trim();
+      buildingsData[idx].tradeCategory = selectedCat;
+      buildingsData[idx].tradeOtherDetail = selectedCat === 'മറ്റുള്ളവ' ? otherDetail : '';
+      buildingsData[idx].licenseStatus = document.getElementById('licenseStatus').value;
+
+      saveToLocal();
+      closeModal();
+      renderList();
+    }
+
+    function triggerFileDownload(wb, fileName, mimeType) {
+      if (window.AndroidBridge && typeof window.AndroidBridge.saveBase64File === 'function') {
+        const base64Str = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+        window.AndroidBridge.saveBase64File(base64Str, fileName, mimeType);
+      } else {
+        XLSX.writeFile(wb, fileName);
+      }
+    }
+
+    function exportToExcel() {
+      if (buildingsData.length === 0) {
+        alert('റിപ്പോർട്ട് തയ്യാറാക്കാൻ ഡാറ്റ ലഭ്യമല്ല.');
+        return;
+      }
+
+      const wardVal = document.getElementById('wardFilter').value;
+      const activeOnly = document.getElementById('activeOnlyCheck').checked;
+
+      const baseList = buildingsData.filter(b => {
+        if (activeOnly && b.buildingStatus !== 'ACTIVE') return false;
+        return true;
+      });
+
+      const filteredList = baseList.filter(b => wardVal === 'ALL' || b.wardNo === wardVal);
+
+      const detailRows = filteredList.map((item, idx) => ({
+        'ക്രമ നമ്പർ': idx + 1,
+        'വാർഡ് നമ്പർ': item.wardNo,
+        'വാർഡിന്റെ പേര്': item.wardName,
+        'കെട്ടിട നമ്പർ': item.doorNo,
+        'ഉടമയുടെ പേര്': item.ownerName,
+        'വ്യാപാരം നടത്തുന്ന ആളുടെ പേര്': item.traderName,
+        'അഡ്രസ്സ്': item.traderAddress || item.buildingAddress,
+        'ഫോൺ നമ്പർ': item.traderPhone,
+        'വ്യാപാരത്തിന്റെ സ്വഭാവം': getFormattedTradeDisplay(item) === '-' ? '' : getFormattedTradeDisplay(item),
+        'ലൈസൻസ് ഉണ്ടോ/ഇല്ലയോ': item.licenseStatus === 'YES' ? 'ഉണ്ട് (Yes)' : (item.licenseStatus === 'NO' ? 'ഇല്ല (No)' : 'രേഖപ്പെടുത്തിയില്ല'),
+        'Building ID': item.id
+      }));
+
+      const wardMap = new Map();
+      baseList.forEach(b => {
+        if (!wardMap.has(b.wardNo)) {
+          wardMap.set(b.wardNo, {
+            'വാർഡ് നമ്പർ': b.wardNo,
+            'വാർഡിന്റെ പേര്': b.wardName,
+            'ആകെ കൊമേഴ്സ്യൽ കടകൾ': 0,
+            'ലൈസൻസ് ഉള്ളവ': 0,
+            'ലൈസൻസ് ഇല്ലാത്തവ': 0,
+            'രേഖപ്പെടുത്താത്തവ': 0
+          });
+        }
+        const rec = wardMap.get(b.wardNo);
+        rec['ആകെ കൊമേഴ്സ്യൽ കടകൾ'] += 1;
+        if (b.licenseStatus === 'YES') rec['ലൈസൻസ് ഉള്ളവ'] += 1;
+        else if (b.licenseStatus === 'NO') rec['ലൈസൻസ് ഇല്ലാത്തവ'] += 1;
+        else rec['രേഖപ്പെടുത്താത്തവ'] += 1;
+      });
+
+      const summaryRows = Array.from(wardMap.values()).sort((a, b) => (parseInt(a['വാർഡ് നമ്പർ']) || 0) - (parseInt(b['വാർഡ് നമ്പർ']) || 0));
+
+      const wb = XLSX.utils.book_new();
+      const ws1 = XLSX.utils.json_to_sheet(detailRows);
+      const ws2 = XLSX.utils.json_to_sheet(summaryRows);
+      XLSX.utils.book_append_sheet(wb, ws1, wardVal === 'ALL' ? 'All_Wards_Report' : `Ward_${wardVal}_Report`);
+      XLSX.utils.book_append_sheet(wb, ws2, 'Ward_Summary');
+
+      const dateTag = new Date().toISOString().slice(0, 10);
+      const fileName = wardVal === 'ALL'
+        ? `Kayakkody_Traders_Report_${dateTag}.xlsx`
+        : `Kayakkody_Traders_Ward_${wardVal}_${dateTag}.xlsx`;
+
+      triggerFileDownload(wb, fileName, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
+    function downloadBackup() {
+      if (buildingsData.length === 0) return alert('ബാക്കപ്പ് ചെയ്യാൻ ഡാറ്റ ഇല്ല.');
+      const jsonStr = JSON.stringify(buildingsData, null, 2);
+      const fileName = `Kayakkody_Traders_Backup_${new Date().toISOString().slice(0,10)}.json`;
+
+      if (window.AndroidBridge && typeof window.AndroidBridge.saveBase64File === 'function') {
+        const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+        window.AndroidBridge.saveBase64File(b64, fileName, 'application/json');
+      } else {
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+      }
+    }
+
+    document.getElementById('jsonInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const parsed = JSON.parse(evt.target.result);
+          if (Array.isArray(parsed)) {
+            buildingsData = parsed;
+            saveToLocal();
+            populateWardDropdown();
+            renderList();
+            alert('ബാക്കപ്പ് വിജയകരമായി റീസ്റ്റോർ ചെയ്തു!');
+          }
+        } catch (err) {
+          alert('തെറ്റായ JSON ഫയൽ ആണ്.');
+        }
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>
